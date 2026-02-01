@@ -1,0 +1,91 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-links",
+        "options": {}
+      },
+      "id": "50788237-b518-4208-b5cc-3ed74afa8270",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "2f18280a-03a4-4531-8bdf-d78187a0913f"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.body?.message || $json.body?.text || \"\";\nconst phone = $json.body?.from || \"Unknown\";\n\nconst urlRegex = /(https?:\\/\\/[^\\s]+)/g;\nconst match = text.match(urlRegex);\n\nlet url = match ? match[0] : \"\";\nlet category = \"Others\";\n\nif (url.includes(\"linkedin.com\")) category = \"LinkedIn\";\nelse if (url.includes(\"youtube.com\") || url.includes(\"youtu.be\")) category = \"YouTube\";\nelse if (url.includes(\"x.com\") || url.includes(\"twitter.com\")) category = \"X\";\nelse if (url.startsWith(\"mailto:\") || text.includes(\"@\")) category = \"Mail\";\n\nreturn [{ json: { phone, message: text, url, category, timestamp: new Date().toISOString() } }];"
+      },
+      "id": "6f4d3a78-4e06-4dd3-82d3-a694c278bf04",
+      "name": "Extract & Classify Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": "WhatsApp Links",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.timestamp}}",
+            "Phone": "={{$json.phone}}",
+            "Message": "={{$json.message}}",
+            "URL": "={{$json.url}}",
+            "Category": "={{$json.category}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "fc43eaa1-e9f1-48e8-ba92-b3232123e4ee",
+      "name": "Store in Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        480,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract & Classify Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Classify Link": {
+      "main": [
+        [
+          {
+            "node": "Store in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "ba2b764b1384aeb1893addea87107432a989123a13d703a7e1fbb7dd7cbe04db"
+  }
+}
